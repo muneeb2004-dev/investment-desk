@@ -5,3 +5,7 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# ADK local runtime artifacts (sessions, traces)
+.adk/
+*.session.db
