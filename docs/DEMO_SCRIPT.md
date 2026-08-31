@@ -1,52 +1,142 @@
 # ~4-minute demo video script
 
-Keep every segment on-camera proof, not slides — the rubric explicitly
-wants live demonstration evidence and GCP deployment proof.
+Track: **The Taskmaster**. Max 4 minutes, public on YouTube or Vimeo.
 
-**0:00–0:20 — Hook**
-"This is Investment Desk — a fleet of Gemini Enterprise agents that
-run a personal trading and investing desk: pick a strategy or describe
-your own, and the fleet analyzes, risk-checks, executes on a demo MT5
-account, and reports back every morning — all with a hard-enforced
-daily loss cap and a full audit trail."
+Keep every segment on-camera proof, not slides — the rubric wants live
+demonstration evidence, not a description of what the system would do.
 
-**0:20–1:00 — Architecture (show `docs/architecture.svg`)**
-Point at: Orchestrator + 5 specialist agents in Gemini Enterprise, the
-FastAPI backend as the tool layer, Firestore for state/audit,
-Cloud Scheduler for the 8am trigger. One sentence on why the backend
-runs locally (MT5's Windows-only API) and is reached over a tunnel —
-show the live GCP console tabs (Firestore data, Cloud Scheduler job)
-briefly here as deployment proof.
+---
 
-**1:00–1:40 — Trading Desk, preset strategy**
-In the Gemini Enterprise chat: ask for an analysis on a symbol using
-the Order Block/SMC preset. Show the agent calling `/analyze-technical`
-and explaining the consensus signal and reasoning in plain language.
+## Before you hit record
 
-**1:40–2:10 — Strategy Builder, natural language**
-Describe a simple custom strategy out loud/typed ("buy when price
-breaks above yesterday's high and RSI is above 50"). Show the agent
-turning it into a structured definition and confirming it saved.
+```bash
+# 1. backend up
+uvicorn backend.main:app --port 8000
 
-**2:10–2:45 — Investment Desk**
-Run the value/quality screen against a couple of symbols' fundamentals
-and show the pass/fail breakdown per rule — emphasize this is
-explainable, not a black box.
+# 2. agent fleet up
+adk web --port 8080
 
-**2:45–3:20 — Risk-gated execution (the security story)**
-Ask the Risk & Execution Agent to act on the earlier signal. Show it
-call `/risk-size` first, state the computed lot size and dollar risk
-out loud, then execute — then show the Firestore audit log entry that
-was just written. If time allows, show a SECOND attempt that gets
-rejected because the daily cap is now used up — this is the strongest
-single proof point for the "security enforcement" criterion.
+# 3. IMPORTANT — tighten the cap so the rejection lands on trade #2,
+#    not trade #5. Run this between every take.
+python scripts/reset_demo_risk.py --cap 0.5
+```
 
-**3:20–3:50 — Reporting**
-Trigger the daily report on demand (`gcloud scheduler jobs run
-investment-desk-daily-report` or the equivalent chat request) and walk
-through the personalized feed for the watchlist.
+Checklist:
+- [ ] **"Algo Trading" is green in the MT5 terminal** — otherwise every
+      order returns `retcode 10027` and the execution beat dies
+- [ ] MT5 terminal visible in a window you can cut to
+- [ ] Firestore console open on the `users/muneeb` document, audit_log
+      subcollection
+- [ ] `docs/architecture.svg` open in a tab
+- [ ] Run one full rehearsal, then reset the risk budget again
 
-**3:50–4:00 — Close**
-One sentence on the Phase 2 roadmap (Discord/Telegram signal ingestion
-routed through the same risk gate) and why it's deliberately not built
-yet, then wrap.
+> The cap trick: default is 2% of $100k = $2,000, and each trade commits
+> 0.5% = $500 — that is four approvals before a rejection. `--cap 0.5`
+> makes the cap $500, so trade #1 is approved and trade #2 is refused.
+
+---
+
+## 0:00–0:20 — Hook
+
+> "Placing a trade properly is a messy, multi-step chore. Pick a
+> strategy, read the chart, size the position against your risk limit,
+> place the order, log it. Miss one step and you blow up the account.
+> Investment Desk is an agent fleet that does the whole chore — and
+> physically cannot skip the risk step."
+
+## 0:20–0:50 — Architecture (show `docs/architecture.svg`)
+
+Point at: Orchestrator + five specialists on **Google ADK**, driven by
+**Gemini 3.5 Flash-Lite**; the FastAPI backend as the tool layer;
+**Firestore** for state and the audit log; MT5 for real execution.
+
+One line on why the backend is local: *MT5's Python API is Windows-only
+and has to sit next to the terminal.*
+
+Say the compliance sentence once, plainly:
+> "Gemini 3.5 through the Gemini API, Google ADK as the agent framework,
+> Firestore as the Cloud service."
+
+## 0:50–1:30 — Trading Desk, live signal
+
+Type into the ADK chat:
+
+```
+What's the technical signal on EURUSD right now?
+```
+
+**Point at the side panel** as it happens — the Orchestrator hands off to
+`technical_analyst_agent`, which calls `analyze_technical`. Say out loud:
+
+> "That signal came from deterministic Python running over live MT5
+> candles. The model is explaining it, not inventing it."
+
+## 1:30–2:00 — Strategy Builder, plain English
+
+```
+I want a strategy that buys when price closes above yesterday's high and RSI is above 50.
+```
+
+Show it turning that into a structured definition and saving it. Call out
+the `strategy_id` coming back — that is Firestore persistence.
+
+## 2:00–2:45 — Risk-gated execution ⭐
+
+```
+Buy EURUSD with a 20 pip stop loss. Size it and place it.
+```
+
+Narrate the two-step as it renders in the panel:
+
+> "It calls risk-size *first*. That returns the lot size, the dollar
+> risk, and a signed approval token. Only then does it call
+> execute-order — and execute-order takes no symbol and no volume of its
+> own, just that token."
+
+Cut to the MT5 terminal showing the filled position.
+
+## 2:45–3:20 — The rejection ⭐⭐ (do not skip this)
+
+```
+Now place that exact same trade again.
+```
+
+It gets **refused** — the daily cap is spent.
+
+> "That refusal isn't the model being cautious. The backend computed
+> that the daily loss cap was exhausted and never issued a token. If the
+> model had made a token up, execute-order would have returned 403 —
+> the signature wouldn't verify."
+
+**This is the single strongest proof point in the video.** Let it breathe.
+
+## 3:20–3:45 — Observability
+
+```
+Show me the audit log.
+```
+
+Then cut to the **Firestore console** and show the same entries server-side:
+the approval, the order, and the rejection — each with a timestamp and
+the agent that acted.
+
+> "Append-only. Every agent decision, on the server, not in chat history."
+
+## 3:45–4:00 — Close
+
+> "Multi-step, autonomous, and safe by construction rather than by good
+> intentions. Next up is a signal-ingestion agent that watches Discord
+> channels — routed through this exact same risk gate, so it can never
+> bypass the cap."
+
+---
+
+## If something breaks mid-take
+
+| Symptom | Fix |
+|---|---|
+| `retcode 10027` | Algo Trading is off in MT5 — click it green |
+| Order rejected too early | Budget spent: `python scripts/reset_demo_risk.py --cap 0.5` |
+| `429 RESOURCE_EXHAUSTED` | Gemini free-tier rate limit — wait ~30s and retry the turn |
+| Agent won't hand off | Start a new session in the ADK UI sidebar |
+| Backend 500s on MT5 calls | MT5 terminal closed or logged out — reopen and log in |
