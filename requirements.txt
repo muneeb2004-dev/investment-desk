@@ -1,6 +1,6 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic==2.9.2
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.5
 python-dotenv==1.0.1
 pandas==2.2.3
 # MetaTrader5 5.0.45 is built against the numpy 1.x C ABI —
@@ -8,3 +8,9 @@ pandas==2.2.3
 numpy==1.26.4
 google-cloud-firestore==2.19.0
 MetaTrader5==5.0.45
+requests==2.34.2
+
+# --- ADK agent fleet (adk_agents/) ---
+# Google Agent Development Kit + Gemini API. This is what drives the
+# Orchestrator and the five specialist agents against the backend above.
+google-adk==2.8.0
