@@ -3,6 +3,8 @@ uvicorn[standard]==0.30.6
 pydantic==2.9.2
 python-dotenv==1.0.1
 pandas==2.2.3
-numpy==2.1.1
+# MetaTrader5 5.0.45 is built against the numpy 1.x C ABI —
+# numpy 2.x fails with "numpy.core.multiarray failed to import".
+numpy==1.26.4
 google-cloud-firestore==2.19.0
 MetaTrader5==5.0.45
