@@ -117,14 +117,16 @@ gemini_enterprise/
   SETUP.md               alternative front end: Gemini Enterprise console wiring
 
 scripts/
-  seed_demo_data.py          seed Firestore with demo strategies/watchlist
-  reset_demo_risk.py         reset today's risk budget between demo takes
+  start_backend.bat          one-click: venv, deps, .env, run the backend
+  start_agents.bat           one-click: run the ADK agent fleet UI
+  start_tunnel.bat           expose the backend over a cloudflared tunnel
+  seed_demo_data.py          seed Firestore with starter strategies/watchlist
+  reset_demo_risk.py         clear a user's committed daily risk (admin)
   setup_cloud_scheduler.sh   creates the 8am scheduled report job (bash)
   setup_cloud_scheduler.ps1  same, for Windows PowerShell
 
 docs/
   architecture.svg       system diagram (embedded above)
-  DEMO_SCRIPT.md         the ~4 minute video script
 ```
 
 ## Running it

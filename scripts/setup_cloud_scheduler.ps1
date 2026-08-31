@@ -11,7 +11,7 @@
 # Usage:
 #   .\scripts\setup_cloud_scheduler.ps1 `
 #       -BackendUrl "https://xxxx.trycloudflare.com" `
-#       -GcpProject "the-formula-502816-q3" `
+#       -GcpProject "your-gcp-project-id" `
 #       -UserId "muneeb"
 #
 # NOTE: quick tunnels (cloudflared / ngrok free tier) get a NEW url every

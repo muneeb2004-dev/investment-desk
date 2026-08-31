@@ -9,3 +9,6 @@ venv/
 # ADK local runtime artifacts (sessions, traces)
 .adk/
 *.session.db
+
+# Local video-production notes — not part of the project
+docs/DEMO_SCRIPT.md

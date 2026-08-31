@@ -1,23 +1,28 @@
 """
-Reset today's risk budget — for rehearsing and recording the demo.
+Administrative reset of a user's daily risk budget.
 
-Risk is committed at APPROVAL time (see risk.consume_approval), so a few
-rehearsal runs will eat into today's cap and the "rejected by the daily
-cap" moment will fire earlier than you expect. Run this between takes.
+Risk is committed at APPROVAL time (see risk.consume_approval), not at
+fill time — a rejected or failed order still consumes budget, because the
+capital was formally committed the moment the token was issued. That is
+deliberate: it fails closed. The practical consequence is that testing
+against a live cap will exhaust the day's budget, and this script is how
+you clear it between test runs.
 
-    # put the budget back to zero, leave the cap at its current value
+    # clear today's committed risk, leave the configured cap alone
     python scripts/reset_demo_risk.py
 
-    # zero the budget AND tighten the cap so the rejection lands fast
+    # clear it and change the cap at the same time
     python scripts/reset_demo_risk.py --cap 0.5
 
-Why --cap matters for the video: the default cap is 2% of a $100k demo
-balance = $2,000, and each trade commits 0.5% = $500. That is FOUR
-approved trades before the fifth is rejected — far too slow on camera.
-Setting --cap 0.5 makes the cap $500, so trade #1 is approved and trade
-#2 is rejected outright. That is the money shot for the security story.
+The cap is expressed as a percentage of account balance. At the default
+2% on a $100k account the cap is $2,000, and at 0.5% risk per trade each
+order commits $500 — so four orders clear and the fifth is refused.
+Lowering --cap tightens that: at 0.5% the cap is $500, so the second
+order is refused. Useful for exercising the rejection path directly
+instead of placing four orders to reach it.
 
-Set it back afterwards with:  python scripts/reset_demo_risk.py --cap 2.0
+Every reset is itself written to the audit log, so the budget cannot be
+quietly cleared without leaving a trace.
 """
 
 import argparse

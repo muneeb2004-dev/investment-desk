@@ -54,7 +54,9 @@ echo  have opened BEHIND this window.
 echo.
 echo  Fill in: MT5_LOGIN, MT5_PASSWORD, MT5_SERVER (your demo
 echo  account), and make up any two random strings for
-echo  BACKEND_API_KEY and RISK_TOKEN_SECRET.
+echo  BACKEND_API_KEY and RISK_TOKEN_SECRET. Also set
+echo  GOOGLE_CLOUD_PROJECT and GOOGLE_API_KEY (get a free Gemini
+echo  key at https://aistudio.google.com/apikey).
 echo  SAVE THE FILE, then CLOSE Notepad to continue.
 echo ============================================================
 echo.
