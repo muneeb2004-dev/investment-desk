@@ -24,11 +24,28 @@ _initialized = False
 
 def _ensure_init():
     global _initialized
-    if _initialized:
-        return
     import MetaTrader5 as mt5  # imported lazily so this module can be
-
     # unit-tested / imported on non-Windows machines without crashing.
+
+    if _initialized:
+        # Cheap liveness probe before trusting the cached flag. The
+        # terminal can be closed, restarted, or logged out underneath us
+        # — and without this check the stale _initialized=True makes
+        # every later call fail with "IPC send failed" until the backend
+        # process itself is restarted. Mid-demo that is fatal, so
+        # reconnect transparently instead.
+        try:
+            if mt5.account_info() is not None:
+                return
+        except Exception:
+            pass
+        logger.warning("MT5 connection lost — reinitializing.")
+        try:
+            mt5.shutdown()
+        except Exception:
+            pass
+        _initialized = False
+
     kwargs = {}
     if settings.MT5_TERMINAL_PATH:
         kwargs["path"] = settings.MT5_TERMINAL_PATH
@@ -132,6 +149,26 @@ def get_todays_closed_pnl() -> float:
     return float(sum(d.profit + d.swap + d.commission for d in deals))
 
 
+def _filling_modes(symbol: str) -> list:
+    """Fill policies to try for `symbol`, best guess first.
+
+    symbol_info().filling_mode is a bitmask of what the broker allows
+    (1 = FOK, 2 = IOC). We put the advertised ones first and still keep
+    the others as fallbacks, because some demo servers under-report.
+    """
+    import MetaTrader5 as mt5
+
+    mt5.symbol_select(symbol, True)
+    info = mt5.symbol_info(symbol)
+    mask = getattr(info, "filling_mode", 0) if info is not None else 0
+
+    preferred, fallback = [], []
+    (preferred if mask & 1 else fallback).append(mt5.ORDER_FILLING_FOK)
+    (preferred if mask & 2 else fallback).append(mt5.ORDER_FILLING_IOC)
+    fallback.append(mt5.ORDER_FILLING_RETURN)
+    return preferred + fallback
+
+
 def place_order(
     symbol: str,
     direction: str,          # "buy" | "sell"
@@ -164,16 +201,24 @@ def place_order(
         "magic": 20260831,
         "comment": comment,
         "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_IOC,
     }
     if stop_loss is not None:
         request["sl"] = stop_loss
     if take_profit is not None:
         request["tp"] = take_profit
 
-    result = mt5.order_send(request)
-    if result is None:
-        raise RuntimeError(f"order_send returned None: {mt5.last_error()}")
+    # Brokers differ on which fill policies they accept, and a symbol that
+    # rejects IOC returns 10030 "Unsupported filling mode" rather than
+    # telling you what it wants. Ask the symbol what it supports, then
+    # fall back through the alternatives if it still refuses.
+    for filling in _filling_modes(symbol):
+        request["type_filling"] = filling
+        result = mt5.order_send(request)
+        if result is None:
+            raise RuntimeError(f"order_send returned None: {mt5.last_error()}")
+        if result.retcode != mt5.TRADE_RETCODE_INVALID_FILL:
+            break
+        logger.warning("Filling mode %s rejected for %s, trying the next one.", filling, symbol)
 
     return {
         "retcode": result.retcode,
