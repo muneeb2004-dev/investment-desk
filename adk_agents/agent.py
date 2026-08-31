@@ -24,7 +24,7 @@ from . import tools
 
 # Gemini 3.5+ is a hackathon requirement. Override with GEMINI_MODEL in
 # backend/.env if you want to pin a different variant.
-MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 DEFAULT_USER = os.getenv("DESK_USER_ID", "muneeb")
 
