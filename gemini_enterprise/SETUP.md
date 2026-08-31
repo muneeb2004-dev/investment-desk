@@ -1,8 +1,19 @@
 # Gemini Enterprise console setup
 
-You already know this console — this is just the exact agent/tool
-layout for this project, so you're not re-deciding structure while
-the clock is running.
+> **Not the path used for this submission.** The fleet that ships here
+> runs on Google ADK (`adk_agents/`) against the Gemini API — see the
+> README. Gemini Enterprise requires an active Google Cloud billing
+> account, which this project did not have.
+>
+> This document is kept because the backend is deliberately front-end
+> agnostic: the tools are plain authenticated HTTP with an OpenAPI
+> schema, so the same six agents can be rebuilt in the Gemini Enterprise
+> console without touching a line of backend code. That portability is
+> the point — the security guarantees live in the backend, not in
+> whichever runtime is driving it.
+
+This is the exact agent/tool layout for this project, so you're not
+re-deciding structure while the clock is running.
 
 ## 1. Expose the backend first
 
